@@ -1,0 +1,29 @@
+{
+  "name": "ssaifriend/account",
+  "description": "account book",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ssaifriend",
+      "email": "ssaifriend@gmail.com"
+    }
+  ],
+  "require": {
+    "silex/silex": "^2.0",
+    "symfony/http-foundation": "^3.2",
+    "ridibooks/platform-gnfdb": "^0.1.11",
+    "illuminate/support": "^5.4",
+    "twig/twig": "^2.3",
+    "sentry/sentry": "^1.6"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6.0",
+    "phpunit/dbunit": "^3.0",
+    "squizlabs/php_codesniffer": "^2.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "AccountBook\\": "src/AccountBook"
+    }
+  }
+}
