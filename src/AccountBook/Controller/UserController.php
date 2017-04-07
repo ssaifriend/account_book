@@ -7,5 +7,10 @@ use AccountBook\Common\BaseController;
 
 class UserController extends BaseController
 {
-
+	public function test()
+	{
+		return [
+			'test' => 1234
+		];
+	}
 }
