@@ -3,3 +3,4 @@ composer.phar
 composer.lock
 vendor/
 include/config.local.php
+static/bower_components
