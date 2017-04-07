@@ -5,6 +5,16 @@ class ConfigDefault
 {
 	public const SENTRY_ENABLE = false;
 	public const SENTRY_KEY = '';
+
+	public const DB = [
+		'default' => [
+			'host' => 'localhost',
+			'port' => 3306,
+			'user' => '',
+			'password' => '',
+			'dbname' => '',
+		]
+	];
 }
 
 if (file_exists(__DIR__ . '/config.real.php')) {
