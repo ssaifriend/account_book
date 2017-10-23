@@ -1,0 +1,8 @@
+#container { margin-top: 100px; }
+
+.width100px { width: 100px; }
+.tr, .tr-prev, .tr-check { text-align: right; }
+.red { color: red; }
+.blue { color: blue; }
+
+.form-control.width100px { width: 100px; }

@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace AccountBook\Common;
 
+use AccountBook\Library\RedirectException;
 use AccountBook\Library\SentryHelper;
 use Silex\Application;
 use Silex\Provider\TwigServiceProvider;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class Router
@@ -55,22 +57,33 @@ class Router
 		$controller_namespace = 'AccountBook\\Controller\\';
 		$controller_class_name = $controller_namespace . ucfirst($controller_name) . 'Controller';
 
+		$extend_variable = [];
 		if (class_exists($controller_class_name)) {
-			/** @var BaseController $controller_instance */
-			$controller_instance = new $controller_class_name;
-			$response = $controller_instance->{$method}();
+		    try {
+                /** @var BaseController $controller_instance */
+                $controller_instance = new $controller_class_name;
+                $response = $controller_instance->{$method}();
+                $extend_variable = $controller_instance->getExtendVariable();
+            } catch (RedirectException $re) {
+		        $response = new RedirectResponse($re->getMessage(), 301);
+            } catch (\Exception $e) {
+		        throw $e;
+            }
 		} else {
 			$response = new Response('', 404);
 		}
 
-		if (is_array($response) || is_string($response)) {
-			$twig_path = $controller_name . '/' . $method . '.twig';
-			try {
-				$result = $app['twig']->render($twig_path, $response);
-			} catch (\Exception $e) {
-				SentryHelper::triggerException($e);
-				$result = new Response('', 500);
-			}
+		if (is_array($response)) {
+            $twig_path = $controller_name . '/' . $method . '.twig';
+            try {
+                $response = array_merge($extend_variable, $response);
+                $result = $app['twig']->render($twig_path, $response);
+            } catch (\Exception $e) {
+                SentryHelper::triggerException($e);
+                $result = new Response('', 500);
+            }
+        } elseif (is_string($response)) {
+		    $result = new Response($response);
 		} else {
 			$result = $response;
 		}

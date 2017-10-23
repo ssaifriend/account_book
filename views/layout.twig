@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}{% endblock %}</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+  <link rel="stylesheet" type="text/css" href="/static/bower_components/bootstrap/dist/css/bootstrap.css"/>
+  <link rel="stylesheet" type="text/css" href="/static/css/style.css"/>
+  <script src="/static/bower_components/requirejs/require.js"></script>
+  <script src="/static/js/require_config.js"></script>
+  {% block style %}
+  {% endblock %}
+</head>
+
+<body>
+
+<header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" role="banner">
+  <div class="container">
+    {% if session.login %}
+      <div class="navbar-header">
+        <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a href="/month" class="navbar-brand">가계부</a>
+      </div>
+      <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+        <ul class="nav navbar-nav">
+          {% for url, title in menus %}
+            <li {% if request_url[1] == url %}class="active"{% endif %}>
+              <a href="/{{ url }}">{{ title }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </nav>
+    {% else %}
+      <div class="navbar-header">
+        <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a href="./" class="navbar-brand">^^</a>
+      </div>
+    {% endif %}
+  </div>
+</header>
+
+<div class="container" id="container">
+  {% block content %}
+  {% endblock %}
+</div>
+
+{% block script %}
+{% endblock %}
+</body>
+</html>

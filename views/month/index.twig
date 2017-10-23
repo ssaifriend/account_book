@@ -1,0 +1,307 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+  월별 데이터 조회
+{% endblock %}
+
+{% block script %}
+  <script>
+    requirejs([
+        'jquery'
+      ], function ($) {
+        $(document).ready(function () {
+          $('.search').click(reload);
+        });
+
+        function reload() {
+          $.getJSON('/data/getList?date=' + getDate(), function (thismonth) {
+            $.getJSON('/data/getList?date=' + getPrev(), function (prevmonth) {
+              var obj = $('table tbody td').filter('.tr');
+              var prevobj = $('table tbody td').filter('.tr-prev');
+              var checkobj = $('table tbody td').filter('.tr-check');
+              var bank = {}, group = {};
+              var prevbank = {}, prevgroup = {};
+              var total = 0, count = {'은행': 0, '카드': 0};
+              var prevtotal = 0;
+              var countList = {};
+              obj.text('0');
+              prevobj.text('0');
+              checkobj.text('0');
+              $.each(thismonth, function (k, v) {
+                if (typeof bank[v.pay_type] == 'undefined') bank[v.pay_type] = 0;
+                if (typeof group[v.group_id] == 'undefined') group[v.group_id] = 0;
+
+                v.pay_price = parseInt(v.pay_price);
+                bank[v.pay_type] += v.pay_price;
+                group[v.group_id] += v.pay_price;
+                total += v.pay_price;
+                obj.filter('[data-use="' + v.use_place + '"]').html(number_format(v.pay_price));
+              });
+              $.each(prevmonth, function (k, v) {
+                if (typeof prevbank[v.pay_type] == 'undefined') prevbank[v.pay_type] = 0;
+                if (typeof prevgroup[v.group_id] == 'undefined') prevgroup[v.group_id] = 0;
+
+                v.pay_price = parseInt(v.pay_price);
+                prevbank[v.pay_type] += v.pay_price;
+                prevgroup[v.group_id] += v.pay_price;
+                prevtotal += v.pay_price;
+                prevobj.filter('[data-use="' + v.use_place + '"]').html(number_format(v.pay_price));
+              });
+              for (var k in bank) {
+                if (typeof countList[k] != 'undefined') continue;
+                var keyword = k.substring(k.length - 2, k.length);
+                count[keyword]++;
+                countList[k] = true;
+              }
+              for (var k in prevbank) {
+                if (typeof countList[k] != 'undefined') continue;
+                var keyword = k.substring(k.length - 2, k.length);
+                count[keyword]++;
+                countList[k] = true;
+              }
+              var str = '';
+              for (var a in count) {
+                var setFalse = false;
+                for (var k in countList) {
+                  var keyword = k.substring(k.length - 2, k.length);
+                  if (keyword != a) continue;
+                  str += '<tr>';
+                  if (!setFalse) {
+                    str += '<td rowspan="' + count[a] + '">' + a + '</td>';
+                    setFalse = true;
+                  }
+                  str += '<td>' + k + '</td>';
+                  str += '<td class="tr-prev">' + number_format((typeof prevbank[k] != 'undefined' ? prevbank[k] : 0)) + '</td>';
+                  str += '<td class="tr">' + number_format((typeof bank[k] != 'undefined' ? bank[k] : 0)) + '</td>';
+                  var p = (typeof bank[k] != 'undefined' ? bank[k] : 0) - (typeof prevbank[k] != 'undefined' ? prevbank[k] : 0);
+                  str += '<td class="tr-check' + (p > 0 ? ' red' : ' blue') + '">' + number_format(p) + '</td>';
+                  str += '</tr>';
+                }
+                ;
+              }
+              str += '<tr>';
+              str += '<td colspan="2">합계</td>';
+              str += '<td class="tr-prev" data-sum="sum">' + number_format(prevtotal) + '</td>';
+              str += '<td class="tr" data-sum="sum">' + number_format(total) + '</td>';
+              var p = total - prevtotal;
+              str += '<td class="tr-check' + (p > 0 ? ' red' : ' blue') + '" data-sum="sum">' + number_format(p) + '</td>';
+              str += '</tr>';
+              $('#bankList tbody').html(str);
+              $.each(group, function (k, v) {
+                obj.filter('[data-group="' + k + '"]').html(number_format(v));
+              });
+              $.each(prevgroup, function (k, v) {
+                prevobj.filter('[data-group="' + k + '"]').html(number_format(v));
+              });
+              var acceptList = {};
+              obj.filter('[data-groupList]').each(function () {
+                var list = $(this).attr('data-groupList');
+                if (list) {
+                  list = list.split(',');
+                  var sum = 0;
+                  $.each(list, function (k, v) {
+                    if (typeof group[v] == 'undefined') return;
+                    sum += group[v];
+                    acceptList[k] = true;
+                  });
+                  $(this).html(number_format(sum));
+                } else {
+                  var sum = 0;
+                  $.each(group, function (k, v) {
+                    if (typeof acceptList[k] == 'undefined') return;
+                    sum += v;
+                  });
+                  $(this).html(number_format(sum));
+                }
+              });
+              acceptList = {};
+              prevobj.filter('[data-groupList]').each(function () {
+                var list = $(this).attr('data-groupList');
+                if (list) {
+                  list = list.split(',');
+                  var sum = 0;
+                  $.each(list, function (k, v) {
+                    if (typeof prevgroup[v] == 'undefined') return;
+                    sum += prevgroup[v];
+                    acceptList[k] = true;
+                  });
+                  $(this).html(number_format(sum));
+                } else {
+                  var sum = 0;
+                  $.each(prevgroup, function (k, v) {
+                    if (typeof acceptList[k] == 'undefined') return;
+                    sum += v;
+                  });
+                  $(this).html(number_format(sum));
+                }
+              });
+              checkobj.each(function () {
+                var thismonth = $(this).prev().text().replace(/,/gi, '');
+                var prevmonth = $(this).prev().prev().text().replace(/,/gi, '');
+                var p = thismonth - prevmonth;
+                $(this).removeClass('blue red').addClass((p > 0 ? 'red' : 'blue')).text(number_format(p));
+              });
+            });
+          });
+        }
+
+        function getDate() {
+          return $('input[name=year]').val() + '-' + $('input[name=month]').val();
+        }
+
+        function getPrev() {
+          var year = $('input[name=year]').val();
+          var month = $('input[name=month]').val();
+          if (month == 1) {
+            year--;
+            month = 12;
+          } else
+            month--;
+          if (month < 10) month = '0' + month;
+          return year + '-' + month;
+        }
+
+        function number_format(number, decimals, dec_point, thousands_sep) {
+          number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+          var n = !isFinite(+number) ? 0 : +number,
+            prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+            sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+            dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+            s = '',
+            toFixedFix = function (n, prec) {
+              var k = Math.pow(10, prec);
+              return '' + Math.round(n * k) / k;
+            };
+          // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+          s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+          if (s[0].length > 3) {
+            s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+          }
+          if ((s[1] || '').length < prec) {
+            s[1] = s[1] || '';
+            s[1] += new Array(prec - s[1].length + 1).join('0');
+          }
+          return s.join(dec);
+        }
+      }
+    );
+  </script>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-4 form-inline">
+      <div class="form-group"><input type="text" name="year" class="form-control width100px" value="{{ "now"|date('Y') }}" /></div> 년
+      <div class="form-group"><input type="text" name="month" class="form-control width100px" value="{{ "now"|date('m') }}" /></div> 월
+      <div class="form-group"><button type="button" class="btn btn-default search">조회</button></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="alert alert-warning fade in">
+      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">x</button>
+      하단에 기재된 <strong>일자</strong>는 조회한 달의 다음달 입니다.
+    </div>
+
+    <div class="col-md-6">
+      <table class="table" id="bankList">
+        <caption>출금 계좌별</caption>
+        <thead>
+        <tr>
+          <th colspan="2">분류</th>
+          <th>저번달</th>
+          <th>이번달</th>
+          <th>증감</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-md-6">
+      <table class="table">
+        <caption>특정 항목 조회</caption>
+        <thead>
+        <tr>
+          <th>항목명</th>
+          <th>저번달</th>
+          <th>이번달</th>
+          <th>증감</th>
+          <th>기타</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for group in special_groups %}
+        <tr>
+          <td>{{ group.use_place }}</td>
+          <td class="tr-prev" data-use="{{ group.use_place }}"></td>
+          <td class="tr" data-use="{{ group.use_place }}"></td>
+          <td class="tr-check" data-use="{{ group.use_place }}"></td>
+          <td>{{ group.pay_type }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <table class="table">
+        <caption>분류별 금액합산</caption>
+        <thead>
+        <tr>
+          <th>분류</th>
+          <th>저번달</th>
+          <th>이번달</th>
+          <th>증감</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for group in groups %}
+        <tr>
+          <td>{{ group.vcName }}</td>
+          <td class="tr-prev" data-group="{{ group.nSeqNo }}"></td>
+          <td class="tr" data-group="{{ group.nSeqNo }}"></td>
+          <td class="tr-check" data-group="{{ group.nSeqNo }}"></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-md-6">
+      <table class="table">
+        <caption>분류 정리합산</caption>
+        <thead>
+        <tr>
+          <th>분류</th>
+          <th>저번달</th>
+          <th>이번달</th>
+          <th>증감</th>
+          <th>설명</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for group in group_summary %}
+        <tr>
+          <td>{{ group.name }}</td>
+          <td class="tr-prev" data-groupList="{{ group.group_list }}"></td>
+          <td class="tr" data-groupList="{{ group.group_list }}"></td>
+          <td class="tr-check" data-groupList="{{ group.group_list }}"></td>
+          <td>{{ group.note }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td>미분류</td>
+          <td class="tr-prev" data-groupList=""></td>
+          <td class="tr" data-groupList=""></td>
+          <td class="tr-check" data-groupList=""></td>
+          <td></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
