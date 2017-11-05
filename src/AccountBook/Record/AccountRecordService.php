@@ -45,7 +45,7 @@ class AccountRecordService
             $dto->date = $date;
         };
 
-        $dicts = collect($datas)->map($convert_dtos)->each($set_group)->each($set_date)->map->exportToInsert();
+        $dicts = collect($datas)->map($convert_dtos)->each($set_group)->each($set_date)->map->exportToDatabase()->all();
 
         AccountDataModel::create()->multiInsert($dicts);
     }
