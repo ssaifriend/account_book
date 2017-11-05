@@ -66,7 +66,7 @@ class Router
                 $extend_variable = $controller_instance->getExtendVariable();
             } catch (RedirectException $re) {
 		        $response = new RedirectResponse($re->getMessage(), 301);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
 		        throw $e;
             }
 		} else {
@@ -78,7 +78,7 @@ class Router
             try {
                 $response = array_merge($extend_variable, $response);
                 $result = $app['twig']->render($twig_path, $response);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 SentryHelper::triggerException($e);
                 $result = new Response('', 500);
             }

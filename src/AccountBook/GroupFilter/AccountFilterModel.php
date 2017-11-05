@@ -17,4 +17,19 @@ class AccountFilterModel extends BaseModel
 
         return $dtos;
     }
+
+    public function insert(GroupFilterDto $filter_dto)
+    {
+        $this->db->sqlInsert('account_filter', $filter_dto->exportToDatabase());
+    }
+
+    public function update(GroupFilterDto $filter_dto)
+    {
+        $this->db->sqlUpdate('account_filter', $filter_dto->exportToDatabase(), ['nSeqNo' => $filter_dto->id]);
+    }
+
+    public function delete(int $filter_id)
+    {
+        $this->db->sqlDelete('account_filter', ['nSeqNo' => $filter_id]);
+    }
 }

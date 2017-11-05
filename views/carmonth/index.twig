@@ -1,0 +1,129 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+  연비 조회
+{% endblock %}
+
+{% block script %}
+
+<script>
+  requirejs([
+    'jquery',
+    'bootstrap'
+  ], function ($) {
+    $(document).ready(function () {
+      reload();
+    });
+
+    function reload() {
+      $.getJSON('/carmonth/getMonthGroup', function (data) {
+        var str = '';
+        var nkm = {}, ntotal = {}, nlitter = {};
+        var km = total = litter = 0;
+        var orderList = [];
+        for (var a = 0, loopa = data.length; a < loopa; a++) {
+          str += '<tr>';
+          str += '<td>' + data[a].year + '년 ' + data[a].month + '월</td>';
+          str += '<td class="tr">' + data[a].nKm + ' Km</td>';
+          str += '<td class="tr">' + number_format(data[a].nTotal) + '원</td>';
+          str += '<td class="tr">' + (data[a].nKm / data[a].nLitter).toFixed(4) + ' Km/L</td>';
+          str += '</tr>';
+          if (typeof nkm[data[a].year] == 'undefined') {
+            nkm[data[a].year] = ntotal[data[a].year] = nlitter[data[a].year] = 0;
+            orderList.push(data[a].year);
+          }
+          nkm[data[a].year] += parseFloat(data[a].nKm);
+          ntotal[data[a].year] += parseInt(data[a].nTotal);
+          nlitter[data[a].year] += parseFloat(data[a].nLitter);
+          km += parseFloat(data[a].nKm);
+          total += parseInt(data[a].nTotal);
+          litter += parseFloat(data[a].nLitter);
+        }
+        str += '<tr>';
+        str += '<td>합계</td>';
+        str += '<td class="tr">' + km.toFixed(2) + ' Km</td>';
+        str += '<td class="tr">' + number_format(total) + '원</td>';
+        str += '<td class="tr">' + (km / litter).toFixed(4) + ' Km/L</td>';
+        str += '</tr>';
+        $('.month tbody').html(str);
+
+        var str = '';
+        for (var a = 0, loopa = orderList.length; a < loopa; a++) {
+          str += '<tr>';
+          str += '<td>' + orderList[a] + '년</td>';
+          str += '<td class="tr">' + nkm[orderList[a]] + ' Km</td>';
+          str += '<td class="tr">' + number_format(ntotal[orderList[a]]) + '원</td>';
+          str += '<td class="tr">' + (nkm[orderList[a]] / nlitter[orderList[a]]).toFixed(4) + ' Km/L</td>';
+          str += '</tr>';
+        }
+        str += '<tr>';
+        str += '<td>합계</td>';
+        str += '<td class="tr">' + km.toFixed(2) + ' Km</td>';
+        str += '<td class="tr">' + number_format(total) + '원</td>';
+        str += '<td class="tr">' + (km / litter).toFixed(4) + ' Km/L</td>';
+        str += '</tr>';
+        $('.year tbody').html(str);
+      });
+    }
+
+    function number_format(number, decimals, dec_point, thousands_sep) {
+      number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+      var n = !isFinite(+number) ? 0 : +number,
+        prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+        sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+        dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+        s = '',
+        toFixedFix = function (n, prec) {
+          var k = Math.pow(10, prec);
+          return '' + Math.round(n * k) / k;
+        };
+      // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+      s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+      if (s[0].length > 3) {
+        s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+      }
+      if ((s[1] || '').length < prec) {
+        s[1] = s[1] || '';
+        s[1] += new Array(prec - s[1].length + 1).join('0');
+      }
+      return s.join(dec);
+    }
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-6">
+      <table class="table month">
+        <caption>월별</caption>
+        <thead>
+        <tr>
+          <th>월</th>
+          <th>총 주행거리</th>
+          <th>총 비용</th>
+          <th>연비</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-md-6">
+      <table class="table year">
+        <caption>연도별</caption>
+        <thead>
+        <tr>
+          <th>연도</th>
+          <th>총 주행거리</th>
+          <th>총 비용</th>
+          <th>연비</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

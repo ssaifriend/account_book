@@ -71,15 +71,15 @@ class AccountRecordDto extends BaseDto
     public static function importFromRequest(Request $request): self
     {
         $dto = new self;
-        $dto->id = $request->request->get('nSeqNo');
-        $dto->date = $request->request->get('vcDate');
-        $dto->group_id = intval($request->request->get('nGroup'));
-        $dto->use_date = $request->request->get('dtUseDate');
-        $dto->use_place = $request->request->get('vcUse');
-        $dto->pay_type = $request->request->get('vcBank');
-        $dto->pay_price = intval($request->request->get('nPrice'));
-        $dto->use_price = intval($request->request->get('nUse'));
-        $dto->discount = intval($request->request->get('nEtc'));
+        $dto->id = $request->request->get('id');
+        $dto->date = $request->request->get('date');
+        $dto->group_id = intval($request->request->get('group_id'));
+        $dto->use_date = $request->request->get('use_date');
+        $dto->use_place = $request->request->get('use_place');
+        $dto->pay_type = $request->request->get('pay_type');
+        $dto->pay_price = intval($request->request->get('pay_price'));
+        $dto->use_price = intval($request->request->get('use_price'));
+        $dto->discount = intval($request->request->get('discount'));
 
         return $dto;
     }

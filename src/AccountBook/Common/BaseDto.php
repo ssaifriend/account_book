@@ -6,7 +6,7 @@ namespace AccountBook\Common;
 class BaseDto
 {
 	/**
-	 * @return BaseDto
+	 * @return static
 	 */
 	public static function importEmptyObject()
 	{

@@ -1,0 +1,291 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+  자료 관리
+{% endblock %}
+
+{% block script %}
+  <script>
+    requirejs([
+      'jquery',
+      'bootstrap'
+    ], function ($) {
+      $(document).ready(function(){
+        $('.insertMass').click(function(){
+          $('#dataInsert').find('textarea').val('').end().modal('show');
+        });
+        $('.insert').click(function(){
+          $('#dataInsertOne').find('select, input').each(function(){
+            $(this).val('');
+          }).end().modal('show');
+        });
+
+        $('#dataInsert .btn-primary').click(function(){
+          $.ajax({url:'/data/insertList', data:{data:$('#dataInsert textarea').val(),date:getDate()}, type:'post'})
+          .done(function(){
+            $('#dataInsert').modal('hide');
+            reload();
+          });
+        });
+
+        $('#dataInsertOne .btn-primary').click(function(){
+          var data = {date:getDate()};
+          $('#dataInsertOne').find('select, input').each(function(){
+            data[$(this).attr('name')] = $(this).val();
+          });
+          $.ajax({url:'/data/insertRecord', data:data, type:'post'})
+          .done(function(){
+            $('#dataInsertOne').modal('hide');
+            reload();
+          });
+        });
+
+        $('#dataUpdate .btn-primary').click(function(){
+          var data = {};
+          $('#dataUpdate').find('select, input').each(function(){
+            data[$(this).attr('name')] = $(this).val();
+          });
+          $.ajax({url:'/data/updateRecord', data:data, type:'post'})
+          .done(function(){
+            $('#dataUpdate').modal('hide');
+            reload();
+          });
+        });
+
+        $('.deleteMass').click(function(){
+          $.ajax('/data/deleteMonth?date='+getDate()).done(reload);
+        });
+        $('.search').click(reload);
+      });
+
+      function reload(){
+        $.getJSON('/data/getList?date='+getDate(), function(data){
+          var str = '';
+          $.each(data, function(k , v){
+            str += '<tr>';
+            str += '<td>'+v.use_date+'</td>';
+            str += '<td class="nSeqNo'+v.id+'"><select name="groupChange" class="form-control">';
+            str += '<option value=""'+(v.group_id==0?' selected="selected"':'')+'>== 미선택 ==</option>';
+            {% for group in groups %}
+            str += '<option value="{{ group.nSeqNo }}"'+(v.group_id=="{{ group.nSeqNo }}"?' selected="selected"':'')+'>{{ group.vcName }}</option>';
+            {% endfor %}
+            str += '</select></td>';
+            str += '<td>'+v.use_place+'</td>';
+            str += '<td class="tr">'+number_format(v.pay_price)+'</td>';
+            str += '<td>'+v.pay_type+'</td>';
+            str += '<td class="tr">'+number_format(v.use_price)+'</td>';
+            str += '<td class="tr">'+number_format(v.discount)+'</td>';
+            str += '<td class="nSeqNo'+v.id+'"><button type="button" class="btn btn-default edit">수정</button> <button type="button" class="btn btn-danger del">삭제</button></td>';
+            str += '</tr>';
+          });
+          $('table.list tbody').html(str).find('.edit').click(function(){
+            $.ajax({url:'/data/getRecord', data:{nSeqNo:$(this).parent().attr('class').replace('nSeqNo','')}})
+            .done(function(result){
+              $('#dataUpdate').find('select, input').each(function(){
+                $(this).val(result[$(this).attr('name')]);
+              }).end().modal('show');
+            });
+          }).end().find('.del').click(function(){
+            $.ajax({url:'/data/deleteRecord?nSeqNo='+$(this).parent().attr('class').replace('nSeqNo','')})
+            .done(function(){
+              reload();
+            });
+          }).end().find('[name=groupChange]').change(function(){
+            $.ajax({url:'/data/updateGroup', data:{nSeqNo:$(this).parent().attr('class').replace('nSeqNo',''), nGroup:$(this).val()}});
+          });
+        });
+      }
+
+      function getDate(){
+        return $('input[name=year]').val()+'-'+$('input[name=month]').val();
+      }
+
+      function number_format (number, decimals, dec_point, thousands_sep) {
+        number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+        var n = !isFinite(+number) ? 0 : +number,
+          prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+          sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+          dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+          s = '',
+          toFixedFix = function (n, prec) {
+            var k = Math.pow(10, prec);
+            return '' + Math.round(n * k) / k;
+          };
+        // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+        s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+        if (s[0].length > 3) {
+          s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+        }
+        if ((s[1] || '').length < prec) {
+          s[1] = s[1] || '';
+          s[1] += new Array(prec - s[1].length + 1).join('0');
+        }
+        return s.join(dec);
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-4 form-inline">
+      <div class="form-group"><input type="text" name="year" class="form-control width100px" value="{{ "now"|date('Y') }}" /></div> 년
+      <div class="form-group"><input type="text" name="month" class="form-control width100px" value="{{ "now"|date('m') }}" /></div> 월
+      <div class="form-group"><button type="button" class="btn btn-default search">조회</button></div>
+    </div>
+    <div class="col-md-8">
+      <button type="button" class="btn btn-default insertMass">자료입력(여러개)</button>
+      <button type="button" class="btn btn-default insert">자료입력(한개)</button>
+      <button type="button" class="btn btn-default deleteMass">현재 월 전체삭제</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <table class="table list">
+      <thead>
+      <tr>
+        <th>이용일</th>
+        <th>분류</th>
+        <th>사용처</th>
+        <th>결제금액</th>
+        <th>지불수단</th>
+        <th>이용금액</th>
+        <th>할인/수수료</th>
+        <th>관리</th>
+      </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="dataInsert" class="modal fade">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">자료 일괄입력</h4>
+        </div>
+        <div class="modal-body">
+          <p>
+            <textarea name="data" class="form-control" cols="30" rows="10"></textarea>
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">저장</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <div id="dataInsertOne" class="modal fade">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">자료 입력</h4>
+        </div>
+        <div class="modal-body">
+          <table>
+            <tr>
+              <th>분류</th>
+              <td>
+                <select name="group_id" class="form-control">
+                  <option value="">미선택</option>
+                  {% for group in groups %}
+                    <option value="{{ group.nSeqNo }}">{{ group.vcName }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <th>이용일</th>
+              <td><input type="date" name="use_date" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>사용처</th>
+              <td><input type="text" name="use_place" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>결제금액</th>
+              <td><input type="number" name="pay_price" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>지불수단</th>
+              <td><input type="text" name="pay_type" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>이용금액</th>
+              <td><input type="number" name="use_price" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>할인/수수료</th>
+              <td><input type="number" name="discount" value="" class="form-control" /></td>
+            </tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">저장</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+
+  <div id="dataUpdate" class="modal fade">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">자료 수정</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" value="" class="form-control" />
+          <table>
+            <tr>
+              <th>분류</th>
+              <td>
+                <select name="group_id" class="form-control">
+                  <option value="">미선택</option>
+                  {% for group in groups %}
+                    <option value="{{ group.nSeqNo }}">{{ group.vcName }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <th>이용일</th>
+              <td><input type="date" name="use_date" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>사용처</th>
+              <td><input type="text" name="use_place" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>결제금액</th>
+              <td><input type="number" name="pay_price" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>지불수단</th>
+              <td><input type="text" name="pay_type" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>이용금액</th>
+              <td><input type="number" name="use_price" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>할인/수수료</th>
+              <td><input type="number" name="discount" value="" class="form-control" /></td>
+            </tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">저장</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+{% endblock %}

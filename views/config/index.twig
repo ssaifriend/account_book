@@ -1,0 +1,338 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+  설정
+{% endblock %}
+
+{% block script %}
+  <script>
+    requirejs([
+      'jquery',
+      'bootstrap'
+    ], function ($) {
+      var group = [];
+      $(document).ready(function () {
+        $('.insertGroup').click(function () {
+          $('#modalInsertGroup').find('select, input').each(function () {
+            $(this).val('');
+          }).end().modal('show');
+        });
+
+        $('#modalInsertGroup .btn-primary').click(function () {
+          $.ajax({
+            url: '/config/insertGroup/',
+            data: {data: $('#modalInsertGroup input[name=group]').val()},
+            type: 'post'
+          })
+            .done(function () {
+              $('#modalInsertGroup').modal('hide');
+              reloadGroupList();
+            });
+        });
+
+        $('#modalEditGroup .btn-primary').click(function () {
+          var data = {};
+          $('#modalEditGroup').find('select, input').each(function () {
+            data[$(this).attr('name')] = $(this).val();
+          });
+          $.ajax({url: '/config/editGroup/', data: data, type: 'post'})
+            .done(function () {
+              $('#modalEditGroup').modal('hide');
+              reloadGroupList();
+            });
+        });
+
+
+        $('.insertFilter').click(function () {
+          $('#modalInsertGroup').find('select, input').each(function () {
+            $(this).val('');
+          }).end().modal('show');
+        });
+
+        $('#modalInsertFilter .btn-primary').click(function () {
+          $.ajax({
+            url: '/config/insertFilter/',
+            data: {data: $('#modalInsertFilter input[name=use]').val()},
+            type: 'post'
+          })
+            .done(function () {
+              $('#modalInsertFilter').modal('hide');
+              reloadFilterList();
+            });
+        });
+
+        $('#modalEditFilter .btn-primary').click(function () {
+          var data = {};
+          $('#modalEditFilter').find('select, input').each(function () {
+            data[$(this).attr('name')] = $(this).val();
+          });
+          $.ajax({url: '/config/editGroup/', data: data, type: 'post'})
+            .done(function () {
+              $('#modalEditFilter').modal('hide');
+              reloadFilterList();
+            });
+        });
+        reloadGroupList();
+        reloadFilterList();
+      });
+
+      function loadGroupList() {
+        $.ajax({url: '/config/getGroupList', async: false, cache: false})
+          .done(function (data) {
+            group = $.parseJSON(data);
+          });
+      }
+
+      function reloadGroupList() {
+        loadGroupList();
+        var str = '';
+        $.each(group, function (k, v) {
+          str += '<tr>';
+          str += '<td>' + v.vcName + '</td>';
+          str += '<td class="nSeqNo' + v.nSeqNo + '"><button type="button" class="btn btn-default edit">수정</button> <button type="button" class="btn btn-danger del">삭제</button></td>';
+          str += '</tr>';
+        });
+        $('#group table.list tbody').html(str).find('.edit').click(function () {
+          var nSeqNo = $(this).parent().attr('class').replace('nSeqNo', '');
+          var group = $(this).parent().prev().text();
+          $('#modalEditGroup').find('input')
+            .filter('[name=nSeqNo]').val(nSeqNo).end()
+            .filter('[name=group]').val(group).end()
+            .end().modal('show');
+        }).end().find('.del').click(function () {
+          $.ajax({url: '/config/deleteGroup/' + $(this).parent().attr('class').replace('nSeqNo', '')})
+            .done(function () {
+              reloadGroupList();
+            });
+        });
+      }
+
+      function reloadFilterList() {
+        $.getJSON('/config/getFilterList/', function (data) {
+          var str = '';
+          $.each(data, function (k, v) {
+            str += '<tr>';
+            str += '<td>' + v.vcUse + '</td>';
+            str += '<td class="nSeqNo' + v.nSeqNo + '"><select name="groupChange" class="form-control">';
+            str += '<option value=""' + (v.nGroup == 0 ? ' selected="selected"' : '') + '>== 미선택 ==</option>';
+            $.each(group, function (kg, kv) {
+              str += '<option value="' + kg + '"' + (v.nGroup == kg ? ' selected="selected"' : '') + '>' + kv.vcName + '</option>';
+            });
+            str += '</select></td>';
+            str += '<td class="nSeqNo' + v.nSeqNo + '"><button type="button" class="btn btn-default edit">수정</button> <button type="button" class="btn btn-danger del">삭제</button></td>';
+            str += '</tr>';
+          });
+          $('#filter table.list tbody').html(str).find('.edit').click(function () {
+            var nSeqNo = $(this).parent().attr('class').replace('nSeqNo', '');
+            var group = $(this).parent().prev().prev().text();
+            var use = $(this).parent().prev().find('select').val();
+            var str = '';
+            str += '<option value=""' + (group == 0 ? ' selected="selected"' : '') + '>== 미선택 ==</option>';
+            $.each(group, function (kg, kv) {
+              str += '<option value="' + kg + '"' + (group == kg ? ' selected="selected"' : '') + '>' + kv.vcName + '</option>';
+            });
+            $('#modalEditFilter').find('select, input')
+              .filter('[name=nSeqNo]').val(nSeqNo).end()
+              .filter('[name=group]').html(str).val(group).end()
+              .filter('[name=use]').val(use).end()
+              .end().modal('show');
+          }).end().find('.del').click(function () {
+            $.ajax({url: '/config/deleteFilter/' + $(this).parent().attr('class').replace('nSeqNo', '')})
+              .done(function () {
+                reloadGroupList();
+              });
+          });
+        });
+      }
+
+      function number_format(number, decimals, dec_point, thousands_sep) {
+        number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+        var n = !isFinite(+number) ? 0 : +number,
+          prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+          sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+          dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+          s = '',
+          toFixedFix = function (n, prec) {
+            var k = Math.pow(10, prec);
+            return '' + Math.round(n * k) / k;
+          };
+        // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+        s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+        if (s[0].length > 3) {
+          s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+        }
+        if ((s[1] || '').length < prec) {
+          s[1] = s[1] || '';
+          s[1] += new Array(prec - s[1].length + 1).join('0');
+        }
+        return s.join(dec);
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <ul class="nav nav-tabs" role="tablist" id="myTab">
+    <li class="active"><a href="#group" aria-controls="group" role="tab" data-toggle="tab">그룹 관리</a></li>
+    <li><a href="#filter" aria-controls="filter" role="tab" data-toggle="tab">필터 관리</a></li>
+  </ul>
+</div>
+
+<div class="tab-content">
+  <div role="tabpanel" class="tab-pane active" id="group">
+    <div class="row">
+      <button type="button" class="btn btn-default insertGroup">그룹 등록</button>
+    </div>
+
+    <div class="row">
+      <table class="table list">
+        <thead>
+        <tr>
+          <th>그룹명</th>
+          <th>관리</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div role="tabpanel" class="tab-pane" id="filter">
+    <div class="row">
+      <button type="button" class="btn btn-default insertFilter">필터 등록</button>
+    </div>
+
+    <div class="row">
+      <table class="table list">
+        <thead>
+        <tr>
+          <th>사용처</th>
+          <th>그룹</th>
+          <th>관리</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+<div id="modalInsertGroup" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">그룹 등록</h4>
+      </div>
+      <div class="modal-body">
+        <table>
+          <tr>
+            <th>그룹명</th>
+            <td><input type="text" name="group" value="" class="form-control" /></td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">저장</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<div id="modalEditGroup" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">그룹 수정</h4>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="nSeqNo" value="" class="form-control" />
+        <table>
+          <tr>
+            <th>그룹명</th>
+            <td><input type="text" name="group" value="" class="form-control" /></td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">저장</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<div id="modalInsertFilter" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">필터 입력</h4>
+      </div>
+      <div class="modal-body">
+        <table>
+          <tr>
+            <th>분류</th>
+            <td>
+              <select name="group" class="form-control">
+                <option value="">미선택</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>사용처</th>
+            <td><input type="text" name="use" value="" class="form-control" /></td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">저장</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<div id="modalEditFilter" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">필터 수정</h4>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="nSeqNo" value="" class="form-control" />
+        <table>
+          <tr>
+            <th>분류</th>
+            <td>
+              <select name="group" class="form-control">
+                <option value="">미선택</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>사용처</th>
+            <td><input type="text" name="use" value="" class="form-control" /></td>
+          </tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">저장</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends 'layout.twig' %}
+
+{% block title %}
+  주유 기록 관리
+{% endblock %}
+
+{% block script %}
+<script>
+  requirejs([
+    'jquery',
+    'bootstrap'
+  ], function ($) {
+    $(document).ready(function () {
+      $('.insert').click(function () {
+        $('#dataInsertOne').find('select, input').each(function () {
+          $(this).val('');
+        }).end().modal('show');
+      });
+
+      $('#dataInsertOne .btn-primary').click(function () {
+        var data = {};
+        $('#dataInsertOne').find('select, input').each(function () {
+          data[$(this).attr('name')] = $(this).val();
+        });
+        $.ajax({url: '/cardata/insertRecord', data: data, type: 'post'})
+        .done(function () {
+          $('#dataInsertOne').modal('hide');
+          reload();
+        });
+      });
+
+      $('#dataUpdate .btn-primary').click(function () {
+        var data = {};
+        $('#dataUpdate').find('select, input').each(function () {
+          data[$(this).attr('name')] = $(this).val();
+        });
+        $.ajax({url: '/cardata/updateRecord', data: data, type: 'post'})
+        .done(function () {
+          $('#dataUpdate').modal('hide');
+          reload();
+        });
+      });
+
+      $('.search').click(reload);
+    });
+
+    function reload() {
+      $.getJSON('/cardata/getList?year=' + $('input[name=year]').val(), function (data) {
+        var str = '';
+        $.each(data, function (k, v) {
+          str += '<tr>';
+          str += '<td>' + v.use_date + '</td>';
+          str += '<td class="tr">' + v.distance + ' Km</td>';
+          str += '<td class="tr">' + v.litter + ' L</td>';
+          str += '<td class="tr">' + number_format(v.price_per_unit) + '</td>';
+          str += '<td class="tr">' + number_format(v.total_price) + '원</td>';
+          str += '<td class="tr">' + (v.distance / v.litter).toFixed(4) + 'Km/L</td>';
+          str += '<td class="nSeqNo' + v.id + '"><button type="button" class="btn btn-default edit">수정</button> <button type="button" class="btn btn-danger del">삭제</button></td>';
+          str += '</tr>';
+        });
+        $('table.list tbody').html(str).find('.edit').click(function () {
+          $.ajax({
+            url: '/cardata/getRecord',
+            data: {nSeqNo: $(this).parent().attr('class').replace('nSeqNo', '')},
+            type: 'get'
+          })
+          .done(function (result) {
+            $('#dataUpdate').find('select, input').each(function () {
+              $(this).val(result[$(this).attr('name')]);
+            }).end().modal('show');
+          });
+        }).end().find('.del').click(function () {
+          $.ajax({url: '/cardata/deleteRecord?nSeqNo=' + $(this).parent().attr('class').replace('nSeqNo', '')})
+          .done(function () {
+            reload();
+          });
+        });
+      });
+    }
+
+    function number_format(number, decimals, dec_point, thousands_sep) {
+      number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+      var n = !isFinite(+number) ? 0 : +number,
+        prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+        sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+        dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+        s = '',
+        toFixedFix = function (n, prec) {
+          var k = Math.pow(10, prec);
+          return '' + Math.round(n * k) / k;
+        };
+      // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+      s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+      if (s[0].length > 3) {
+        s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+      }
+      if ((s[1] || '').length < prec) {
+        s[1] = s[1] || '';
+        s[1] += new Array(prec - s[1].length + 1).join('0');
+      }
+      return s.join(dec);
+    }
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-4 form-inline">
+      <div class="form-group"><input type="text" name="year" class="form-control width100px" value="{{ "now"|date('Y') }}" /></div> 년
+      <div class="form-group"><button type="button" class="btn btn-default search">조회</button></div>
+    </div>
+    <div class="col-md-8">
+      <button type="button" class="btn btn-default insert">자료입력</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <table class="table list">
+      <thead>
+      <tr>
+        <th>이용일</th>
+        <th>주행거리</th>
+        <th>주유량</th>
+        <th>단가</th>
+        <th>금액</th>
+        <th>연비</th>
+        <th>관리</th>
+      </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="dataInsertOne" class="modal fade">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">자료 입력</h4>
+        </div>
+        <div class="modal-body">
+          <table>
+            <tr>
+              <th>이용일</th>
+              <td><input type="date" name="use_date" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>주행거리</th>
+              <td><input type="number" name="distance" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>주유량</th>
+              <td><input type="number" name="litter" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>단가</th>
+              <td><input type="number" name="price_per_unit" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>금액</th>
+              <td><input type="number" name="total_price" value="" class="form-control" /></td>
+            </tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">저장</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+
+  <div id="dataUpdate" class="modal fade">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">자료 수정</h4>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" value="" class="form-control" />
+          <table>
+            <tr>
+              <th>이용일</th>
+              <td><input type="date" name="use_date" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>주행거리</th>
+              <td><input type="number" name="distance" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>주유량</th>
+              <td><input type="number" name="litter" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>단가</th>
+              <td><input type="number" name="price_per_unit" value="" class="form-control" /></td>
+            </tr>
+            <tr>
+              <th>금액</th>
+              <td><input type="number" name="total_price" value="" class="form-control" /></td>
+            </tr>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">저장</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+{% endblock %}
