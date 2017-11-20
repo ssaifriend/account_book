@@ -32,7 +32,7 @@ class AccountDataModel extends BaseModel
 
     public function insert(AccountRecordDto $pay_record_dto)
     {
-        $dict = $pay_record_dto->exportToDatabase();
+        $dict = array_filter($pay_record_dto->exportToDatabase());
         $this->db->sqlInsert('account_data', $dict);
     }
 

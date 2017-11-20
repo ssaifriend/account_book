@@ -86,7 +86,7 @@ class AccountRecordDto extends BaseDto
 
     public function exportToDatabase(): array
     {
-        $dict = [
+        return [
             'nSeqNo' => $this->id,
             'vcDate' => $this->date,
             'nGroup' => $this->group_id,
@@ -97,7 +97,5 @@ class AccountRecordDto extends BaseDto
             'nUse' => $this->use_price,
             'nEtc' => $this->discount,
         ];
-
-        return array_filter($dict);
     }
 }

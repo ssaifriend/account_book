@@ -45,7 +45,14 @@ class AccountRecordService
             $dto->date = $date;
         };
 
-        $dicts = collect($datas)->map($convert_dtos)->each($set_group)->each($set_date)->map->exportToDatabase()->all();
+        $get_dicts = function (AccountRecordDto $dto) {
+            $dict = $dto->exportToDatabase();
+            unset($dict['nSeqNo']);
+
+            return $dict;
+        };
+
+        $dicts = collect($datas)->map($convert_dtos)->each($set_group)->each($set_date)->map($get_dicts)->all();
 
         AccountDataModel::create()->multiInsert($dicts);
     }
